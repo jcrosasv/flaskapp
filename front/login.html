@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Infracciones</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .auth-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .auth-container h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.25);
+        }
+        .form-group input[type="submit"] {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            border: none;
+            padding: 12px;
+        }
+        .form-group input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+        .form-group input[type="submit"]:active {
+            background-color: #004085;
+        }
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+            text-align: center;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 10px 0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Sistema de Infracciones</h1>
+    </header>
+
+    <main>
+        <div class="auth-container">
+            <h2>Iniciar Sesión</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Usuario:</label>
+                    <input type="text" id="username" name="username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña:</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                </div>
+                <div class="form-group">
+                    <input type="submit" value="Iniciar Sesión">
+                </div>
+                <div id="login-message" class="message"></div>
+                <div id="loading" class="loading">Cargando...</div>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p>Derechos reservados © 2024</p>
+    </footer>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            var username = document.getElementById('username').value;
+            var password = document.getElementById('password').value;
+            var messageEl = document.getElementById('login-message');
+            var loadingEl = document.getElementById('loading');
+
+            // Show loading message
+            loadingEl.style.display = 'block';
+            messageEl.style.display = 'none';
+
+            var data = {
+                username: username,
+                password: password
+            };
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'http://localhost:5000/api/v1/file/login', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    loadingEl.style.display = 'none';
+                    
+                    if (xhr.status === 200) {
+                        try {
+                            var response = JSON.parse(xhr.responseText);
+                            
+                            // Store is_admin flag in localStorage for use on search page
+                            if (response.is_admin !== undefined) {
+                                localStorage.setItem('is_admin', response.is_admin);
+                            }
+                            
+                            messageEl.textContent = 'Inicio de sesión exitoso. Redirigiendo...';
+                            messageEl.className = 'message success';
+                            messageEl.style.display = 'block';
+                            
+                            setTimeout(() => {
+                                window.location.href = 'http://localhost:5000/search';
+                            }, 1500);
+                        } catch (e) {
+                            messageEl.textContent = 'Error al procesar respuesta del servidor';
+                            messageEl.className = 'message error';
+                            messageEl.style.display = 'block';
+                        }
+                    } else {
+                        messageEl.textContent = 'Usuario o contraseña incorrectos';
+                        messageEl.className = 'message error';
+                        messageEl.style.display = 'block';
+                    }
+                }
+            };
+            xhr.onerror = function() {
+                loadingEl.style.display = 'none';
+                messageEl.textContent = 'Error de conexión con el servidor';
+                messageEl.className = 'message error';
+                messageEl.style.display = 'block';
+            };
+            xhr.send(JSON.stringify(data));
+        });
+    </script>
+</body>
+</html>
