@@ -522,43 +522,39 @@
         function updatePaginationButtons(paginationInfo) {
             const paginationDiv = document.getElementById('paginationControls');
             
-            paginationDiv.innerHTML = '';
-            
             // Solo mostrar si hay múltiples páginas
             if (paginationInfo.totalPages && paginationInfo.totalPages > 1) {
                 paginationDiv.style.display = 'flex';
+                paginationDiv.style.textAlign = 'center';
+                paginationDiv.style.margin = '20px 0';
+                paginationDiv.style.gap = '10px';
+                paginationDiv.style.justifyContent = 'center';
+                paginationDiv.style.flexWrap = 'wrap';
                 
-                // Botón Anterior
-                const prevBtn = document.createElement('button');
-                prevBtn.textContent = '← Página Anterior';
-                prevBtn.style.cssText = 'padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;';
-                prevBtn.disabled = paginationInfo.page <= 1;
-                prevBtn.onclick = () => goToPage(paginationInfo.page - 1);
-                if (prevBtn.disabled) {
-                    prevBtn.style.background = '#ccc';
-                    prevBtn.style.cursor = 'not-allowed';
-                }
-                paginationDiv.appendChild(prevBtn);
+                const prevDisabled = paginationInfo.page <= 1;
+                const nextDisabled = paginationInfo.page >= paginationInfo.totalPages;
                 
-                // Indicador de página
-                const pageInfo = document.createElement('span');
-                pageInfo.style.cssText = 'padding: 8px 15px; font-weight: bold; color: #2c3e50; align-self: center;';
-                pageInfo.textContent = `Página ${paginationInfo.page} de ${paginationInfo.totalPages}`;
-                paginationDiv.appendChild(pageInfo);
+                paginationDiv.innerHTML = `
+                    <button onclick="goToPage(${paginationInfo.page - 1})" 
+                            style="padding: 8px 15px; background: ${prevDisabled ? '#ccc' : '#3498db'}; color: white; border: none; border-radius: 4px; cursor: ${prevDisabled ? 'not-allowed' : 'pointer'}; font-weight: bold;"
+                            ${prevDisabled ? 'disabled' : ''}>
+                        ← Página Anterior
+                    </button>
+                    <span style="padding: 8px 15px; font-weight: bold; color: #2c3e50; align-self: center;">
+                        Página ${paginationInfo.page} de ${paginationInfo.totalPages}
+                    </span>
+                    <button onclick="goToPage(${paginationInfo.page + 1})" 
+                            style="padding: 8px 15px; background: ${nextDisabled ? '#ccc' : '#3498db'}; color: white; border: none; border-radius: 4px; cursor: ${nextDisabled ? 'not-allowed' : 'pointer'}; font-weight: bold;"
+                            ${nextDisabled ? 'disabled' : ''}>
+                        Página Siguiente →
+                    </button>
+                `;
                 
-                // Botón Siguiente
-                const nextBtn = document.createElement('button');
-                nextBtn.textContent = 'Página Siguiente →';
-                nextBtn.style.cssText = 'padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;';
-                nextBtn.disabled = paginationInfo.page >= paginationInfo.totalPages;
-                nextBtn.onclick = () => goToPage(paginationInfo.page + 1);
-                if (nextBtn.disabled) {
-                    nextBtn.style.background = '#ccc';
-                    nextBtn.style.cursor = 'not-allowed';
-                }
-                paginationDiv.appendChild(nextBtn);
+                console.log(`[Pagination] Showing pagination: Page ${paginationInfo.page} of ${paginationInfo.totalPages}`);
             } else {
                 paginationDiv.style.display = 'none';
+                paginationDiv.innerHTML = '';
+                console.log(`[Pagination] Hiding pagination (only ${paginationInfo.totalPages} page(s))`);
             }
         }
 
