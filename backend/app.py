@@ -19,6 +19,10 @@ from utils import (
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONT_DIR = os.path.join(BASE_DIR, 'front')
 
+# Si FRONT_DIR no existe (en producción), intentar rutas relativas
+if not os.path.exists(FRONT_DIR):
+    FRONT_DIR = os.path.join(os.path.dirname(__file__), '..', 'front')
+
 app = Flask(__name__, template_folder=FRONT_DIR, static_folder=FRONT_DIR)
 app.config.from_object(get_config())
 
