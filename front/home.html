@@ -633,12 +633,14 @@
                     
                     data.users.forEach(user => {
                         const rolBadge = user.role === 'admin' ? '👤 Admin' : '👥 Usuario';
+                        const isCurrentUser = user.username === 'admin'; // Proteger al usuario admin principal
                         html += `<tr>
                             <td><strong>${user.username}</strong></td>
                             <td>${rolBadge}</td>
                             <td>${user.created_at}</td>
                             <td>
-                                <button class="button-nice" style="padding: 6px 12px; font-size: 12px;" onclick="openChangePasswordModal('${user.username}')">🔑 Cambiar Password</button>
+                                <button class="button-nice" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;" onclick="openChangePasswordModal('${user.username}')">🔑 Cambiar Password</button>
+                                <button class="button-nice" style="padding: 6px 12px; font-size: 12px; background-color: #dc3545;" onclick="deleteUser('${user.username}')" ${isCurrentUser ? 'disabled title="No puedes eliminar el usuario admin"' : ''}>🗑️ Eliminar</button>
                             </td>
                         </tr>`;
                     });
@@ -685,6 +687,34 @@
             .catch(error => {
                 console.error('Error:', error);
                 alert('✗ Error al cambiar la contraseña');
+            });
+        }
+
+        function deleteUser(username) {
+            const confirmDelete = confirm(`¿Estás seguro de que deseas eliminar el usuario "${username}"? Esta acción no se puede deshacer.`);
+            if (!confirmDelete) return;
+
+            fetch('/api/v1/delete-user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✓ Usuario "' + username + '" eliminado exitosamente');
+                    loadUsers();
+                } else {
+                    alert('✗ Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('✗ Error al eliminar el usuario');
             });
         }
 

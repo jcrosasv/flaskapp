@@ -302,6 +302,42 @@ def api_change_password():
         traceback.print_exc()
         return jsonify({'success': False, 'message': f'Error al cambiar contraseña: {str(e)}'}), 500
 
+@app.route('/api/v1/delete-user', methods=['POST'])
+def api_delete_user():
+    """Eliminar un usuario - Solo para admin"""
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    try:
+        user = get_current_user()
+        if not user or not user.is_admin():
+            return jsonify({'success': False, 'message': 'Solo administradores pueden eliminar usuarios'}), 403
+        
+        data = request.get_json()
+        username = data.get('username')
+        
+        if not username:
+            return jsonify({'success': False, 'message': 'Usuario requerido'}), 400
+        
+        # Proteger al usuario admin
+        if username == 'admin':
+            return jsonify({'success': False, 'message': 'No se puede eliminar el usuario admin'}), 403
+        
+        target_user = User.query.filter_by(username=username).first()
+        if not target_user:
+            return jsonify({'success': False, 'message': 'Usuario no encontrado'}), 404
+        
+        db.session.delete(target_user)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': f'Usuario {username} eliminado exitosamente'}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"ERROR EN /api/v1/delete-user: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Error al eliminar usuario: {str(e)}'}), 500
+
 @app.route('/api/v1/upload-logs', methods=['GET'])
 def api_upload_logs():
     """Obtener logs de subidas - Solo para admin"""
