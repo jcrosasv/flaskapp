@@ -548,5 +548,17 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+# Servir archivos estáticos
+@app.route('/styles.css')
+def serve_styles():
+    """Servir styles.css desde la carpeta front"""
+    try:
+        with open(os.path.join(FRONT_DIR, 'styles.css'), 'r', encoding='utf-8') as f:
+            response = app.make_response(f.read())
+            response.headers['Content-Type'] = 'text/css; charset=utf-8'
+            return response
+    except FileNotFoundError:
+        return 'File not found', 404
+
 if __name__ == '__main__':
     app.run(debug=True, host='localhost', port=5000)
