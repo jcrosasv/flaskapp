@@ -573,14 +573,18 @@
 
         // Función para realizar búsqueda (reutilizable para paginación)
         function performSearch(searchText, page = 1) {
+            console.log(`[Search] Starting search for "${searchText}" on page ${page}`);
+            
             loading.classList.add('show');
             resultsContainer.style.display = 'none';
             noResults.style.display = 'none';
             
             const url = `/api/v1/file/search?searchText=${encodeURIComponent(searchText)}&page=${page}&per_page=20`;
+            console.log(`[Search] Fetching URL: ${url}`);
             
             fetch(url)
             .then(response => {
+                console.log(`[Search] Response status: ${response.status}`);
                 if (response.ok) {
                     return response.json();
                 } else if (response.status === 401) {
@@ -590,10 +594,12 @@
                 }
             })
             .then(response => {
+                console.log(`[Search] Response data:`, response);
                 loading.classList.remove('show');
                 
                 // Verificar la nueva estructura de respuesta
                 if (response.success === false) {
+                    console.error(`[Search] Error response: ${response.message}`);
                     noResults.innerHTML = '<div class="no-logs">❌ Error: ' + response.message + '</div>';
                     noResults.style.display = 'block';
                     resultsContainer.style.display = 'none';
@@ -605,10 +611,14 @@
                 totalPages = response.total_pages;
                 currentPage = response.page;
                 
+                console.log(`[Search] Total results: ${totalResults}, Total pages: ${totalPages}, Current page: ${currentPage}`);
+                
                 if (!response.data || response.data.length === 0 || response.total === 0) {
+                    console.log(`[Search] No results found`);
                     noResults.style.display = 'block';
                     resultsContainer.style.display = 'none';
                 } else {
+                    console.log(`[Search] Displaying ${response.data.length - 1} results`);
                     populateTable(response.data, `Resultados de la búsqueda:`, {
                         total: response.total,
                         page: response.page,
@@ -618,7 +628,7 @@
             })
             .catch(error => {
                 loading.classList.remove('show');
-                console.error('Error:', error);
+                console.error(`[Search] Error:`, error);
                 
                 if (error.message.includes('Sesión expirada')) {
                     alert(error.message);
