@@ -148,8 +148,10 @@
                             messageEl.className = 'message success';
                             messageEl.style.display = 'block';
                             
+                            // Redirigir a /home si es admin, a /search si no
+                            const redirectUrl = response.is_admin ? '/home' : '/search';
                             setTimeout(() => {
-                                window.location.href = '/search';
+                                window.location.href = redirectUrl;
                             }, 1500);
                         } catch (e) {
                             messageEl.textContent = 'Error al procesar respuesta del servidor';

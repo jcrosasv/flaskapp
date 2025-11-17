@@ -267,6 +267,9 @@
             <div class="nav-tab active" onclick="switchTab('home')">
                 <span>🏠</span> Home
             </div>
+            <div class="nav-tab" onclick="switchTab('users')">
+                <span>👥</span> Usuarios
+            </div>
             <div class="nav-tab" onclick="switchTab('logs')">
                 <span>📋</span> Registro de Cargas
             </div>
@@ -294,6 +297,23 @@
                     <h2>Crear Usuario</h2>
                     <p>Crea nuevos usuarios del sistema</p>
                     <a href="#" onclick="openCreateUserModal(); return false;">Crear Usuario</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="users" class="tab-content">
+            <div class="logs-container">
+                <div class="logs-title">👥 Gestión de Usuarios</div>
+                <div style="padding: 20px; background-color: white; display: flex; gap: 10px; border-bottom: 1px solid #ddd;">
+                    <button class="button-nice" onclick="loadUsers()">🔄 Actualizar</button>
+                    <button class="button-nice" onclick="openCreateUserModal()">➕ Crear Usuario</button>
+                </div>
+                <div id="usersTable" style="flex: 1; overflow-y: auto;">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando usuarios...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -496,6 +516,11 @@
             if (tabName === 'logs') {
                 loadLogs();
             }
+            
+            // Load users if switching to users tab
+            if (tabName === 'users') {
+                loadUsers();
+            }
         }
 
         // Modal functions
@@ -586,6 +611,82 @@
                 showModalMessage(error.message || 'Error al crear usuario', 'error');
             });
         });
+
+        // Load users
+        function loadUsers() {
+            const usersTable = document.getElementById('usersTable');
+            usersTable.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando usuarios...</p></div>';
+
+            fetch('/api/v1/users')
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else if (response.status === 401) {
+                    throw new Error('Sesión expirada');
+                } else {
+                    throw new Error('Error al cargar usuarios');
+                }
+            })
+            .then(data => {
+                if (data.users && data.users.length > 0) {
+                    let html = '<table><thead><tr><th>Usuario</th><th>Rol</th><th>Fecha Creación</th><th>Acciones</th></tr></thead><tbody>';
+                    
+                    data.users.forEach(user => {
+                        const rolBadge = user.role === 'admin' ? '👤 Admin' : '👥 Usuario';
+                        html += `<tr>
+                            <td><strong>${user.username}</strong></td>
+                            <td>${rolBadge}</td>
+                            <td>${user.created_at}</td>
+                            <td>
+                                <button class="button-nice" style="padding: 6px 12px; font-size: 12px;" onclick="openChangePasswordModal('${user.username}')">🔑 Cambiar Password</button>
+                            </td>
+                        </tr>`;
+                    });
+                    
+                    html += '</tbody></table>';
+                    usersTable.innerHTML = html;
+                } else {
+                    usersTable.innerHTML = '<div class="no-logs">No hay usuarios registrados</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                usersTable.innerHTML = '<div class="no-logs">Error al cargar los usuarios</div>';
+            });
+        }
+
+        function openChangePasswordModal(username) {
+            const password = prompt(`Ingresa la nueva contraseña para ${username}:`);
+            if (password && password.trim() !== '') {
+                changePassword(username, password);
+            }
+        }
+
+        function changePassword(username, newPassword) {
+            fetch('/api/v1/change-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: newPassword
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✓ Contraseña cambiada exitosamente para ' + username);
+                    loadUsers();
+                } else {
+                    alert('✗ Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('✗ Error al cambiar la contraseña');
+            });
+        }
 
         // Load logs
         function loadLogs() {
