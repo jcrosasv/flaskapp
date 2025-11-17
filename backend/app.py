@@ -26,6 +26,14 @@ if not os.path.exists(FRONT_DIR):
 app = Flask(__name__, template_folder=FRONT_DIR, static_folder=FRONT_DIR)
 app.config.from_object(get_config())
 
+# Agregar headers CORS para que el navegador pueda hacer peticiones
+@app.after_request
+def add_cors_headers(response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+    return response
+
 # Crear carpeta de uploads si no existe
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
@@ -69,6 +77,16 @@ class UploadLog(db.Model):
 # Variable global para almacenar datos del Excel
 current_data = []
 current_columns = []
+
+def get_current_user():
+    """Helper para obtener el usuario actual de la sesión"""
+    if 'user_id' not in session:
+        return None
+    try:
+        user_id = int(session['user_id']) if isinstance(session['user_id'], str) else session['user_id']
+        return User.query.get(user_id)
+    except:
+        return None
 
 def load_excel_data(filepath):
     """Carga los datos del archivo Excel a memoria con validación de duplicados"""
@@ -205,27 +223,27 @@ def register():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'No autorizado'}), 401
     
-    user = User.query.get(session['user_id'])
-    if not user or not user.is_admin():
-        return jsonify({'success': False, 'message': 'Solo administradores pueden crear usuarios'}), 403
-    
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-    role = data.get('role', 'user')  # 'admin' o 'user'
-    
-    if not username or not password:
-        return jsonify({'success': False, 'message': 'Usuario y contraseña requeridos'}), 400
-    
-    # Verificar si el usuario ya existe
-    if User.query.filter_by(username=username).first():
-        return jsonify({'success': False, 'message': 'El usuario ya existe'}), 400
-    
-    # Crear nuevo usuario
-    new_user = User(username=username, role=role)
-    new_user.set_password(password)
-    
     try:
+        user = get_current_user()
+        if not user or not user.is_admin():
+            return jsonify({'success': False, 'message': 'Solo administradores pueden crear usuarios'}), 403
+        
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        role = data.get('role', 'user')  # 'admin' o 'user'
+        
+        if not username or not password:
+            return jsonify({'success': False, 'message': 'Usuario y contraseña requeridos'}), 400
+        
+        # Verificar si el usuario ya existe
+        if User.query.filter_by(username=username).first():
+            return jsonify({'success': False, 'message': 'El usuario ya existe'}), 400
+        
+        # Crear nuevo usuario
+        new_user = User(username=username, role=role)
+        new_user.set_password(password)
+        
         db.session.add(new_user)
         db.session.commit()
         return jsonify({'success': True, 'message': 'Usuario creado exitosamente'}), 201
@@ -239,7 +257,7 @@ def api_users():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'No autorizado'}), 401
     
-    user = User.query.get(session['user_id'])
+    user = get_current_user()
     if not user or not user.is_admin():
         return jsonify({'success': False, 'message': 'Solo administradores pueden ver usuarios'}), 403
     
