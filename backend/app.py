@@ -249,6 +249,9 @@ def register():
         return jsonify({'success': True, 'message': 'Usuario creado exitosamente'}), 201
     except Exception as e:
         db.session.rollback()
+        print(f"ERROR EN /register: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': f'Error al crear usuario: {str(e)}'}), 500
 
 @app.route('/api/v1/users', methods=['GET'])
@@ -387,6 +390,9 @@ def api_upload():
         else:
             return jsonify({'success': False, 'message': 'Error al procesar el archivo'}), 500
     except Exception as e:
+        print(f"ERROR EN /api/v1/file/upload: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'message': f'Error al subir archivo: {str(e)}'}), 500
 
 @app.route('/logout')
