@@ -103,23 +103,24 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow: visible;
         }
         .results-title {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
-            color: #333;
+            color: #2c3e50;
             margin-bottom: 15px;
             flex-shrink: 0;
-            padding: 10px 0;
+            padding: 20px 0;
         }
         .results-wrapper {
             overflow-y: auto;
             overflow-x: auto;
             border-radius: 4px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            flex: 1;
+            max-height: 600px;
             background-color: white;
+            flex-shrink: 0;
         }
         
         /* Mejorar tabla */
@@ -371,6 +372,9 @@
                         <!-- Resultados aquí -->
                     </table>
                 </div>
+                <div id="paginationControls" style="display: none; text-align: center; margin: 20px 0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <!-- Botones de paginación aquí -->
+                </div>
             </div>
 
             <div id="noResults" class="no-results" style="display: none;">
@@ -515,31 +519,29 @@
 
         // Función para actualizar botones de paginación
         function updatePaginationButtons(paginationInfo) {
-            let paginationDiv = document.getElementById('paginationControls');
-            
-            // Crear el div si no existe
-            if (!paginationDiv) {
-                paginationDiv = document.createElement('div');
-                paginationDiv.id = 'paginationControls';
-                paginationDiv.style.cssText = 'text-align: center; margin: 20px 0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;';
-                resultsContainer.appendChild(paginationDiv);
-            }
+            const paginationDiv = document.getElementById('paginationControls');
             
             paginationDiv.innerHTML = '';
             
             // Solo mostrar si hay múltiples páginas
             if (paginationInfo.totalPages && paginationInfo.totalPages > 1) {
+                paginationDiv.style.display = 'flex';
+                
                 // Botón Anterior
                 const prevBtn = document.createElement('button');
                 prevBtn.textContent = '← Página Anterior';
                 prevBtn.style.cssText = 'padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;';
                 prevBtn.disabled = paginationInfo.page <= 1;
                 prevBtn.onclick = () => goToPage(paginationInfo.page - 1);
+                if (prevBtn.disabled) {
+                    prevBtn.style.background = '#ccc';
+                    prevBtn.style.cursor = 'not-allowed';
+                }
                 paginationDiv.appendChild(prevBtn);
                 
                 // Indicador de página
                 const pageInfo = document.createElement('span');
-                pageInfo.style.cssText = 'padding: 8px 15px; font-weight: bold; color: #2c3e50;';
+                pageInfo.style.cssText = 'padding: 8px 15px; font-weight: bold; color: #2c3e50; align-self: center;';
                 pageInfo.textContent = `Página ${paginationInfo.page} de ${paginationInfo.totalPages}`;
                 paginationDiv.appendChild(pageInfo);
                 
@@ -549,7 +551,13 @@
                 nextBtn.style.cssText = 'padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;';
                 nextBtn.disabled = paginationInfo.page >= paginationInfo.totalPages;
                 nextBtn.onclick = () => goToPage(paginationInfo.page + 1);
+                if (nextBtn.disabled) {
+                    nextBtn.style.background = '#ccc';
+                    nextBtn.style.cursor = 'not-allowed';
+                }
                 paginationDiv.appendChild(nextBtn);
+            } else {
+                paginationDiv.style.display = 'none';
             }
         }
 
