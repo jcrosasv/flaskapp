@@ -176,7 +176,7 @@ def home():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    user = User.query.get(session['user_id'])
+    user = get_current_user()
     
     # Si es admin, mostrar home con opciones
     if user and user.is_admin():
@@ -272,7 +272,7 @@ def api_upload_logs():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'No autorizado'}), 401
     
-    user = User.query.get(session['user_id'])
+    user = get_current_user()
     if not user or not user.is_admin():
         return jsonify({'success': False, 'message': 'Solo administradores pueden ver logs'}), 403
     
@@ -310,7 +310,8 @@ def api_first_data():
         return jsonify({'success': False, 'message': 'No autorizado'}), 401
     
     if not current_data or not current_columns:
-        return jsonify({'success': False, 'message': 'No hay datos cargados'}), 400
+        # Retornar datos vacíos en vez de error 400
+        return jsonify({'data': [], 'success': True}), 200
     
     # Obtener primeros 50 registros
     first_50 = current_data[:50]
@@ -324,7 +325,7 @@ def upload_page():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    user = User.query.get(session['user_id'])
+    user = get_current_user()
     if not user or not user.is_admin():
         return jsonify({'success': False, 'message': 'Solo administradores pueden subir archivos'}), 403
     
@@ -338,7 +339,7 @@ def api_upload():
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'No autorizado'}), 401
     
-    user = User.query.get(session['user_id'])
+    user = get_current_user()
     if not user or not user.is_admin():
         return jsonify({'success': False, 'message': 'Solo administradores pueden subir archivos'}), 403
     
