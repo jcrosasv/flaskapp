@@ -253,10 +253,10 @@
             <h1>🔍 Buscador de Infracciones - Admin</h1>
         </div>
         <div class="header-buttons">
-            <a href="http://localhost:5000/home" class="button-nice">
+            <a href="/home" class="button-nice">
                 <span>🏠</span> Home
             </a>
-            <a href="http://localhost:5000/logout" class="button-nice red">
+            <a href="/logout" class="button-nice red">
                 <span>🚪</span> Cerrar Sesión
             </a>
         </div>
@@ -279,14 +279,14 @@
                     <div class="card-icon">🔍</div>
                     <h2>Buscar Infracciones</h2>
                     <p>Busca infracciones por nombre, cédula, comparendo o placa</p>
-                    <a href="http://localhost:5000/search">Ir a Buscar</a>
+                    <a href="/search">Ir a Buscar</a>
                 </div>
 
                 <div class="card">
                     <div class="card-icon">📤</div>
                     <h2>Cargar Datos</h2>
                     <p>Sube un archivo Excel con datos de infracciones</p>
-                    <a href="http://localhost:5000/upload">Ir a Cargar</a>
+                    <a href="/upload">Ir a Cargar</a>
                 </div>
 
                 <div class="card">
@@ -556,7 +556,7 @@
                 role: role
             };
 
-            fetch('http://localhost:5000/register', {
+            fetch('/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -592,7 +592,7 @@
             const logsTable = document.getElementById('logsTable');
             logsTable.innerHTML = '<div class="loading"><div class="spinner"></div><p>Cargando registros...</p></div>';
 
-            fetch('http://localhost:5000/api/v1/upload-logs')
+            fetch('/api/v1/upload-logs')
             .then(response => {
                 if (response.ok) {
                     return response.json();

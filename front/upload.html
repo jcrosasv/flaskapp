@@ -129,9 +129,9 @@
             <p id="username-display" style="color: white; margin: 0;"></p>
         </div>
         <div style="display:flex; gap: 10px; align-items: center;">
-            <a id="homeLink" class="button-nice" href="http://localhost:5000/home" style="display: none;"><span>🏠</span> Home</a>
-            <a class="button-nice" href="http://localhost:5000/search"><span>🔍</span> Buscar</a>
-            <a class="button-nice red" href="http://localhost:5000/logout"><span>🚪</span> Cerrar Sesión</a>
+            <a id="homeLink" class="button-nice" href="/home" style="display: none;"><span>🏠</span> Home</a>
+            <a class="button-nice" href="/search"><span>🔍</span> Buscar</a>
+            <a class="button-nice red" href="/logout"><span>🚪</span> Cerrar Sesión</a>
         </div>
     </header>
 
@@ -161,7 +161,7 @@
             <h2>⚠️ Acceso Denegado</h2>
             <p style="font-size: 18px; color: #666;">Solo los administradores pueden cargar archivos.</p>
             <p>Si eres administrador, contáctate con el gestor del sistema.</p>
-            <a class="button-nice" href="http://localhost:5000/search" style="display: inline-block; margin-top: 20px;">Volver a Búsqueda</a>
+            <a class="button-nice" href="/search" style="display: inline-block; margin-top: 20px;">Volver a Búsqueda</a>
         </div>
     </main>
 
@@ -259,7 +259,7 @@
             uploadButton.disabled = true;
             uploadButton.textContent = 'Cargando...';
 
-            fetch('http://localhost:5000/api/v1/file/upload', {
+            fetch('/api/v1/file/upload', {
                 method: 'POST',
                 body: formData
             })

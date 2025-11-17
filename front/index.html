@@ -256,10 +256,10 @@
             <h1>Buscador de Infracciones</h1>
         </div>
         <div style="display:flex; gap: 10px; align-items: center;">
-            <a id="homeLink" class="button-nice" href="http://localhost:5000/home" style="display: none;"><span>🏠</span> Home</a>
-            <a id="uploadLink" class="button-nice" href="http://localhost:5000/upload" style="display: none;"><span>📤</span> Cargar Datos</a>
-            <button id="createUserBtn" class="button-nice green" style="display: none;"><span>👤</span> Crear Usuario</button>
-            <a class="button-nice red" href="http://localhost:5000/logout"><span>🚪</span> Cerrar Sesión</a>
+            <a id="homeLink" class="button-nice" href="/home" style="display: none;"><span>🏠</span> Home</a>
+            <a id="uploadLink" class="button-nice" href="/upload" style="display: none;"><span>📤</span> Cargar Datos</a>
+            <a id="createUserBtn" class="button-nice" href="#" style="display: none;"><span>👤</span> Crear Usuario</a>
+            <a class="button-nice red" href="/logout"><span>🚪</span> Cerrar Sesión</a>
         </div>
     </header>
 
@@ -436,7 +436,7 @@
             resultsContainer.style.display = 'none';
             noResults.style.display = 'none';
 
-            fetch('http://localhost:5000/api/v1/file/first-data')
+            fetch('/api/v1/file/first-data')
             .then(response => {
                 if (response.ok) {
                     return response.json();
@@ -455,7 +455,7 @@
                 console.error('Error:', error);
                 // It's ok if no data is loaded yet
                 if (error.message.includes('Sesión expirada')) {
-                    window.location.href = 'http://localhost:5000/login';
+                    window.location.href = '/login';
                 }
             });
         }
@@ -520,7 +520,7 @@
                 role: role
             };
 
-            fetch('http://localhost:5000/register', {
+            fetch('/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -579,7 +579,7 @@
             noResults.style.display = 'none';
 
             // Realizar búsqueda
-            fetch(`http://localhost:5000/api/v1/file/search?searchText=${encodeURIComponent(searchText)}`)
+            fetch(`/api/v1/file/search?searchText=${encodeURIComponent(searchText)}`)
             .then(response => {
                 if (response.ok) {
                     return response.json();
