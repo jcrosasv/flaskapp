@@ -591,7 +591,15 @@
             })
             .then(data => {
                 loading.classList.remove('show');
-                if (data.length === 0) {
+                console.log('Search response:', data);
+                
+                // Verificar si la respuesta es válida
+                if (!Array.isArray(data) || data.length === 0) {
+                    noResults.style.display = 'block';
+                    resultsContainer.style.display = 'none';
+                } else if (data.length === 1 && data[0][0] === 'AVISO') {
+                    // Mostrar mensaje de aviso (no hay datos cargados)
+                    noResults.innerHTML = '<div class="no-logs">⚠️ ' + (data[0][1] || 'No hay datos disponibles') + '</div>';
                     noResults.style.display = 'block';
                     resultsContainer.style.display = 'none';
                 } else {
@@ -604,9 +612,11 @@
                 
                 if (error.message.includes('Sesión expirada')) {
                     alert(error.message);
-                    window.location.href = 'http://localhost:5000/login';
+                    window.location.href = '/login';
                 } else {
-                    alert('Error al realizar la búsqueda: ' + error.message);
+                    noResults.innerHTML = '<div class="no-logs">❌ Error: ' + error.message + '</div>';
+                    noResults.style.display = 'block';
+                    resultsContainer.style.display = 'none';
                 }
             });
         });

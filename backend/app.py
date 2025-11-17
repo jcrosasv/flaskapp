@@ -334,10 +334,21 @@ def api_search():
     if not search_text:
         return jsonify({'success': False, 'message': 'Texto de búsqueda requerido'}), 400
     
-    results = search_data(search_text)
-    formatted_results = format_search_results(current_columns, results)
+    # Verificar si hay datos cargados
+    if not current_data or not current_columns:
+        print(f"WARNING: Search attempted but no data loaded. current_data: {len(current_data) if current_data else 0} records", flush=True)
+        return jsonify([['AVISO'], ['No hay datos cargados. Por favor sube un archivo Excel primero']]), 200
     
-    return jsonify(formatted_results), 200
+    try:
+        results = search_data(search_text)
+        formatted_results = format_search_results(current_columns, results)
+        print(f"Search for '{search_text}' returned {len(formatted_results)-1} results", flush=True)
+        return jsonify(formatted_results), 200
+    except Exception as e:
+        print(f"ERROR EN /api/v1/file/search: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Error al buscar: {str(e)}'}), 500
 
 @app.route('/api/v1/file/first-data', methods=['GET'])
 def api_first_data():
