@@ -361,25 +361,71 @@ def api_login():
 
 @app.route('/api/v1/file/search', methods=['GET'])
 def api_search():
-    """API endpoint para búsqueda"""
+    """API endpoint para búsqueda con paginación"""
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'No autorizado'}), 401
     
     search_text = request.args.get('searchText', '')
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
     
     if not search_text:
         return jsonify({'success': False, 'message': 'Texto de búsqueda requerido'}), 400
     
+    # Validar paginación
+    if page < 1:
+        page = 1
+    if per_page < 1 or per_page > 100:
+        per_page = 20
+    
     # Verificar si hay datos cargados
     if not current_data or not current_columns:
         print(f"WARNING: Search attempted but no data loaded. current_data: {len(current_data) if current_data else 0} records", flush=True)
-        return jsonify([['AVISO'], ['No hay datos cargados. Por favor sube un archivo Excel primero']]), 200
+        return jsonify({
+            'success': True,
+            'data': [],
+            'message': 'No hay datos cargados. Por favor sube un archivo Excel primero',
+            'total': 0,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': 0
+        }), 200
     
     try:
         results = search_data(search_text)
         formatted_results = format_search_results(current_columns, results)
-        print(f"Search for '{search_text}' returned {len(formatted_results)-1} results", flush=True)
-        return jsonify(formatted_results), 200
+        
+        # formatted_results[0] es el header row, el resto son datos
+        header_row = formatted_results[0] if formatted_results else []
+        data_rows = formatted_results[1:] if len(formatted_results) > 1 else []
+        
+        total_records = len(data_rows)
+        total_pages = (total_records + per_page - 1) // per_page if total_records > 0 else 0
+        
+        # Validar página
+        if page > total_pages and total_pages > 0:
+            page = total_pages
+        
+        # Calcular índices para paginación
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        
+        # Extraer datos de la página actual
+        paginated_data = data_rows[start_idx:end_idx]
+        
+        # Reconstruir respuesta con header + datos paginados
+        response_data = [header_row] + paginated_data
+        
+        print(f"Search for '{search_text}' returned {total_records} results, showing page {page} of {total_pages}", flush=True)
+        
+        return jsonify({
+            'success': True,
+            'data': response_data,
+            'total': total_records,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': total_pages
+        }), 200
     except Exception as e:
         print(f"ERROR EN /api/v1/file/search: {str(e)}", flush=True)
         import traceback
@@ -394,13 +440,27 @@ def api_first_data():
     
     if not current_data or not current_columns:
         # Retornar datos vacíos en vez de error 400
-        return jsonify({'data': [], 'success': True}), 200
+        return jsonify({
+            'success': True,
+            'data': [],
+            'total': 0,
+            'page': 1,
+            'per_page': 50,
+            'total_pages': 0
+        }), 200
     
     # Obtener primeros 50 registros
     first_50 = current_data[:50]
     formatted_results = format_search_results(current_columns, first_50)
     
-    return jsonify(formatted_results), 200
+    return jsonify({
+        'success': True,
+        'data': formatted_results,
+        'total': len(current_data),
+        'page': 1,
+        'per_page': 50,
+        'total_pages': (len(current_data) + 49) // 50
+    }), 200
 
 @app.route('/upload')
 def upload_page():

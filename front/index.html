@@ -431,12 +431,18 @@
         const modalCancel = document.getElementById('modalCancel');
         const modalMessage = document.getElementById('modalMessage');
 
+        // Variables para paginación
+        let currentSearchText = '';
+        let currentPage = 1;
+        let totalPages = 0;
+        let totalResults = 0;
+
         // Function to populate table with data
-        function populateTable(data, title = 'Resultados de la búsqueda:') {
+        function populateTable(data, title, paginationInfo = {}) {
             // Clear table
             table.innerHTML = '';
 
-            if (data.length === 0) {
+            if (!data || data.length === 0) {
                 noResults.style.display = 'block';
                 resultsContainer.style.display = 'none';
             } else {
@@ -489,11 +495,132 @@
                 }
                 table.appendChild(tbody);
 
-                // Update results title
-                document.querySelector('.results-title').textContent = title;
+                // Update results title with pagination info
+                let titleText = title;
+                if (paginationInfo.total > 0) {
+                    titleText += ` (${data.length - 1} registros, Total: ${paginationInfo.total})`;
+                    if (paginationInfo.totalPages > 1) {
+                        titleText += ` - Página ${paginationInfo.page} de ${paginationInfo.totalPages}`;
+                    }
+                }
+                document.querySelector('.results-title').textContent = titleText;
+                
                 resultsContainer.style.display = 'block';
                 noResults.style.display = 'none';
+                
+                // Mostrar/ocultar botones de paginación si existen
+                updatePaginationButtons(paginationInfo);
             }
+        }
+
+        // Función para actualizar botones de paginación
+        function updatePaginationButtons(paginationInfo) {
+            let paginationDiv = document.getElementById('paginationControls');
+            
+            // Crear el div si no existe
+            if (!paginationDiv) {
+                paginationDiv = document.createElement('div');
+                paginationDiv.id = 'paginationControls';
+                paginationDiv.style.cssText = 'text-align: center; margin: 20px 0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;';
+                resultsContainer.appendChild(paginationDiv);
+            }
+            
+            paginationDiv.innerHTML = '';
+            
+            // Solo mostrar si hay múltiples páginas
+            if (paginationInfo.totalPages && paginationInfo.totalPages > 1) {
+                // Botón Anterior
+                const prevBtn = document.createElement('button');
+                prevBtn.textContent = '← Página Anterior';
+                prevBtn.style.cssText = 'padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;';
+                prevBtn.disabled = paginationInfo.page <= 1;
+                prevBtn.onclick = () => goToPage(paginationInfo.page - 1);
+                paginationDiv.appendChild(prevBtn);
+                
+                // Indicador de página
+                const pageInfo = document.createElement('span');
+                pageInfo.style.cssText = 'padding: 8px 15px; font-weight: bold; color: #2c3e50;';
+                pageInfo.textContent = `Página ${paginationInfo.page} de ${paginationInfo.totalPages}`;
+                paginationDiv.appendChild(pageInfo);
+                
+                // Botón Siguiente
+                const nextBtn = document.createElement('button');
+                nextBtn.textContent = 'Página Siguiente →';
+                nextBtn.style.cssText = 'padding: 8px 15px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;';
+                nextBtn.disabled = paginationInfo.page >= paginationInfo.totalPages;
+                nextBtn.onclick = () => goToPage(paginationInfo.page + 1);
+                paginationDiv.appendChild(nextBtn);
+            }
+        }
+
+        // Función para ir a una página específica
+        function goToPage(pageNum) {
+            if (!currentSearchText || pageNum < 1 || pageNum > totalPages) {
+                return;
+            }
+            
+            currentPage = pageNum;
+            performSearch(currentSearchText, pageNum);
+        }
+
+        // Función para realizar búsqueda (reutilizable para paginación)
+        function performSearch(searchText, page = 1) {
+            loading.classList.add('show');
+            resultsContainer.style.display = 'none';
+            noResults.style.display = 'none';
+            
+            const url = `/api/v1/file/search?searchText=${encodeURIComponent(searchText)}&page=${page}&per_page=20`;
+            
+            fetch(url)
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else if (response.status === 401) {
+                    throw new Error('Sesión expirada. Por favor inicia sesión nuevamente');
+                } else {
+                    throw new Error('Error al buscar');
+                }
+            })
+            .then(response => {
+                loading.classList.remove('show');
+                
+                // Verificar la nueva estructura de respuesta
+                if (response.success === false) {
+                    noResults.innerHTML = '<div class="no-logs">❌ Error: ' + response.message + '</div>';
+                    noResults.style.display = 'block';
+                    resultsContainer.style.display = 'none';
+                    return;
+                }
+                
+                // Guardar info de paginación
+                totalResults = response.total;
+                totalPages = response.total_pages;
+                currentPage = response.page;
+                
+                if (!response.data || response.data.length === 0 || response.total === 0) {
+                    noResults.style.display = 'block';
+                    resultsContainer.style.display = 'none';
+                } else {
+                    populateTable(response.data, `Resultados de la búsqueda:`, {
+                        total: response.total,
+                        page: response.page,
+                        totalPages: response.total_pages
+                    });
+                }
+            })
+            .catch(error => {
+                loading.classList.remove('show');
+                console.error('Error:', error);
+                
+                if (error.message.includes('Sesión expirada')) {
+                    alert(error.message);
+                    window.location.href = '/login';
+                } else {
+                    noResults.innerHTML = '<div class="no-logs">❌ Error: ' + error.message + '</div>';
+                    noResults.style.display = 'block';
+                    resultsContainer.style.display = 'none';
+                }
+            });
         }
 
         // Check admin status and show/hide upload link
@@ -520,9 +647,19 @@
                     throw new Error('Error al cargar datos');
                 }
             })
-            .then(data => {
+            .then(response => {
                 loading.classList.remove('show');
-                populateTable(data, 'Primeros 50 registros cargados:');
+                
+                if (response.data && response.data.length > 0) {
+                    populateTable(response.data, 'Primeros 50 registros cargados:', {
+                        total: response.total,
+                        page: response.page,
+                        totalPages: response.total_pages
+                    });
+                } else {
+                    noResults.innerHTML = '<div class="no-logs">📁 No hay datos cargados. Por favor sube un archivo Excel primero.</div>';
+                    noResults.style.display = 'block';
+                }
             })
             .catch(error => {
                 loading.classList.remove('show');
@@ -647,52 +784,12 @@
                 return;
             }
 
-            // Mostrar cargando
-            loading.classList.add('show');
-            resultsContainer.style.display = 'none';
-            noResults.style.display = 'none';
-
-            // Realizar búsqueda
-            fetch(`/api/v1/file/search?searchText=${encodeURIComponent(searchText)}`)
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else if (response.status === 401) {
-                    throw new Error('Sesión expirada. Por favor inicia sesión nuevamente');
-                } else {
-                    throw new Error('Error al buscar');
-                }
-            })
-            .then(data => {
-                loading.classList.remove('show');
-                console.log('Search response:', data);
-                
-                // Verificar si la respuesta es válida
-                if (!Array.isArray(data) || data.length === 0) {
-                    noResults.style.display = 'block';
-                    resultsContainer.style.display = 'none';
-                } else if (data.length === 1 && data[0][0] === 'AVISO') {
-                    // Mostrar mensaje de aviso (no hay datos cargados)
-                    noResults.innerHTML = '<div class="no-logs">⚠️ ' + (data[0][1] || 'No hay datos disponibles') + '</div>';
-                    noResults.style.display = 'block';
-                    resultsContainer.style.display = 'none';
-                } else {
-                    populateTable(data, `Resultados de la búsqueda (${data.length - 1} registros):`);
-                }
-            })
-            .catch(error => {
-                loading.classList.remove('show');
-                console.error('Error:', error);
-                
-                if (error.message.includes('Sesión expirada')) {
-                    alert(error.message);
-                    window.location.href = '/login';
-                } else {
-                    noResults.innerHTML = '<div class="no-logs">❌ Error: ' + error.message + '</div>';
-                    noResults.style.display = 'block';
-                    resultsContainer.style.display = 'none';
-                }
-            });
+            // Guardar el texto de búsqueda actual
+            currentSearchText = searchText;
+            currentPage = 1;
+            
+            // Realizar búsqueda desde la página 1
+            performSearch(searchText, 1);
         });
 
         // Permitir buscar con Enter
