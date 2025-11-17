@@ -443,7 +443,7 @@
         let totalResults = 0;
 
         // Function to populate table with data
-        function populateTable(data, title, paginationInfo = {}) {
+        function populateTable(data, title) {
             // Clear table
             table.innerHTML = '';
 
@@ -500,83 +500,36 @@
                 }
                 table.appendChild(tbody);
 
-                // Update results title with pagination info
-                let titleText = title;
-                if (paginationInfo.total > 0) {
-                    titleText += ` (${data.length - 1} registros, Total: ${paginationInfo.total})`;
-                    if (paginationInfo.totalPages > 1) {
-                        titleText += ` - Página ${paginationInfo.page} de ${paginationInfo.totalPages}`;
-                    }
-                }
-                document.querySelector('.results-title').textContent = titleText;
-                
+                // Update results title
+                document.querySelector('.results-title').textContent = title;
                 resultsContainer.style.display = 'block';
                 noResults.style.display = 'none';
-                
-                // Mostrar/ocultar botones de paginación si existen
-                updatePaginationButtons(paginationInfo);
-            }
-        }
-
-        // Función para actualizar botones de paginación
-        function updatePaginationButtons(paginationInfo) {
-            const paginationDiv = document.getElementById('paginationControls');
-            
-            // Solo mostrar si hay múltiples páginas
-            if (paginationInfo.totalPages && paginationInfo.totalPages > 1) {
-                paginationDiv.style.display = 'flex';
-                paginationDiv.style.textAlign = 'center';
-                paginationDiv.style.margin = '20px 0';
-                paginationDiv.style.gap = '10px';
-                paginationDiv.style.justifyContent = 'center';
-                paginationDiv.style.flexWrap = 'wrap';
-                
-                const prevDisabled = paginationInfo.page <= 1;
-                const nextDisabled = paginationInfo.page >= paginationInfo.totalPages;
-                
-                paginationDiv.innerHTML = `
-                    <button onclick="goToPage(${paginationInfo.page - 1})" 
-                            style="padding: 8px 15px; background: ${prevDisabled ? '#ccc' : '#3498db'}; color: white; border: none; border-radius: 4px; cursor: ${prevDisabled ? 'not-allowed' : 'pointer'}; font-weight: bold;"
-                            ${prevDisabled ? 'disabled' : ''}>
-                        ← Página Anterior
-                    </button>
-                    <span style="padding: 8px 15px; font-weight: bold; color: #2c3e50; align-self: center;">
-                        Página ${paginationInfo.page} de ${paginationInfo.totalPages}
-                    </span>
-                    <button onclick="goToPage(${paginationInfo.page + 1})" 
-                            style="padding: 8px 15px; background: ${nextDisabled ? '#ccc' : '#3498db'}; color: white; border: none; border-radius: 4px; cursor: ${nextDisabled ? 'not-allowed' : 'pointer'}; font-weight: bold;"
-                            ${nextDisabled ? 'disabled' : ''}>
-                        Página Siguiente →
-                    </button>
-                `;
-                
-                console.log(`[Pagination] Showing pagination: Page ${paginationInfo.page} of ${paginationInfo.totalPages}`);
-            } else {
                 paginationDiv.style.display = 'none';
-                paginationDiv.innerHTML = '';
-                console.log(`[Pagination] Hiding pagination (only ${paginationInfo.totalPages} page(s))`);
             }
         }
 
-        // Función para ir a una página específica
+        // Función para actualizar botones de paginación (deshabilitada por ahora)
+        function updatePaginationButtons(paginationInfo) {
+            // Paginación deshabilitada - mostrar todos los resultados con scroll
+            document.getElementById('paginationControls').style.display = 'none';
+        }
+
+        // Función para ir a una página específica (deshabilitada)
         function goToPage(pageNum) {
-            if (!currentSearchText || pageNum < 1 || pageNum > totalPages) {
-                return;
-            }
-            
-            currentPage = pageNum;
-            performSearch(currentSearchText, pageNum);
+            // Paginación deshabilitada
+            console.log('Pagination disabled');
         }
 
         // Función para realizar búsqueda (reutilizable para paginación)
         function performSearch(searchText, page = 1) {
-            console.log(`[Search] Starting search for "${searchText}" on page ${page}`);
+            console.log(`[Search] Starting search for "${searchText}"`);
             
             loading.classList.add('show');
             resultsContainer.style.display = 'none';
             noResults.style.display = 'none';
             
-            const url = `/api/v1/file/search?searchText=${encodeURIComponent(searchText)}&page=${page}&per_page=20`;
+            // Usar page 1 y per_page grande para obtener todos los resultados
+            const url = `/api/v1/file/search?searchText=${encodeURIComponent(searchText)}&page=1&per_page=1000`;
             console.log(`[Search] Fetching URL: ${url}`);
             
             fetch(url)
@@ -600,27 +553,20 @@
                     noResults.innerHTML = '<div class="no-logs">❌ Error: ' + response.message + '</div>';
                     noResults.style.display = 'block';
                     resultsContainer.style.display = 'none';
+                    paginationDiv.style.display = 'none';
                     return;
                 }
                 
-                // Guardar info de paginación
-                totalResults = response.total;
-                totalPages = response.total_pages;
-                currentPage = response.page;
-                
-                console.log(`[Search] Total results: ${totalResults}, Total pages: ${totalPages}, Current page: ${currentPage}`);
+                console.log(`[Search] Total results: ${response.total}`);
                 
                 if (!response.data || response.data.length === 0 || response.total === 0) {
                     console.log(`[Search] No results found`);
                     noResults.style.display = 'block';
                     resultsContainer.style.display = 'none';
+                    paginationDiv.style.display = 'none';
                 } else {
                     console.log(`[Search] Displaying ${response.data.length - 1} results`);
-                    populateTable(response.data, `Resultados de la búsqueda:`, {
-                        total: response.total,
-                        page: response.page,
-                        totalPages: response.total_pages
-                    });
+                    populateTable(response.data, `Resultados de la búsqueda (${response.total} registros):`);
                 }
             })
             .catch(error => {
@@ -634,6 +580,7 @@
                     noResults.innerHTML = '<div class="no-logs">❌ Error: ' + error.message + '</div>';
                     noResults.style.display = 'block';
                     resultsContainer.style.display = 'none';
+                    paginationDiv.style.display = 'none';
                 }
             });
         }
@@ -666,11 +613,7 @@
                 loading.classList.remove('show');
                 
                 if (response.data && response.data.length > 0) {
-                    populateTable(response.data, 'Primeros 50 registros cargados:', {
-                        total: response.total,
-                        page: response.page,
-                        totalPages: response.total_pages
-                    });
+                    populateTable(response.data, `Primeros 50 registros cargados:`);
                 } else {
                     noResults.innerHTML = '<div class="no-logs">📁 No hay datos cargados. Por favor sube un archivo Excel primero.</div>';
                     noResults.style.display = 'block';
