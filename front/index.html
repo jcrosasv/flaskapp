@@ -504,7 +504,7 @@
                 document.querySelector('.results-title').textContent = title;
                 resultsContainer.style.display = 'block';
                 noResults.style.display = 'none';
-                paginationDiv.style.display = 'none';
+                document.getElementById('paginationControls').style.display = 'none';
             }
         }
 
@@ -553,7 +553,7 @@
                     noResults.innerHTML = '<div class="no-logs">❌ Error: ' + response.message + '</div>';
                     noResults.style.display = 'block';
                     resultsContainer.style.display = 'none';
-                    paginationDiv.style.display = 'none';
+                    document.getElementById('paginationControls').style.display = 'none';
                     return;
                 }
                 
@@ -563,7 +563,7 @@
                     console.log(`[Search] No results found`);
                     noResults.style.display = 'block';
                     resultsContainer.style.display = 'none';
-                    paginationDiv.style.display = 'none';
+                    document.getElementById('paginationControls').style.display = 'none';
                 } else {
                     console.log(`[Search] Displaying ${response.data.length - 1} results`);
                     populateTable(response.data, `Resultados de la búsqueda (${response.total} registros):`);
@@ -580,7 +580,7 @@
                     noResults.innerHTML = '<div class="no-logs">❌ Error: ' + error.message + '</div>';
                     noResults.style.display = 'block';
                     resultsContainer.style.display = 'none';
-                    paginationDiv.style.display = 'none';
+                    document.getElementById('paginationControls').style.display = 'none';
                 }
             });
         }
