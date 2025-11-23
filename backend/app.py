@@ -486,6 +486,8 @@ def upload_page():
 @app.route('/api/v1/file/upload', methods=['POST'])
 def api_upload():
     """API endpoint para cargar archivos Excel - Solo para admin"""
+    global current_data, current_columns
+    
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'No autorizado'}), 401
     
@@ -505,6 +507,10 @@ def api_upload():
         return jsonify({'success': False, 'message': 'Solo se aceptan archivos Excel'}), 400
     
     try:
+        # Limpiar datos anteriores
+        current_data = []
+        current_columns = []
+        
         # Guardar archivo
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(filepath)
