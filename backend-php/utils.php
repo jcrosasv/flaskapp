@@ -168,10 +168,59 @@ function getQuery($key, $default = null) {
     return $_GET[$key] ?? $default;
 }
 
+
 /**
  * Obtiene JSON del body de la request
  */
 function getJSON() {
     $input = file_get_contents('php://input');
     return json_decode($input, true) ?? [];
+}
+
+/**
+ * Limpia todos los registros del Excel en BD
+ */
+function clearExcelRecords($pdo) {
+    try {
+        $stmt = $pdo->prepare("DELETE FROM excel_records");
+        $stmt->execute();
+        return true;
+    } catch (Exception $e) {
+        error_log("Error limpiando registros: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Agrega registros a la BD
+ */
+function addExcelRecords($pdo, $recordsList) {
+    try {
+        $stmt = $pdo->prepare("INSERT INTO excel_records (data) VALUES (?)");
+        foreach ($recordsList as $recordData) {
+            $stmt->execute([json_encode($recordData)]);
+        }
+        return true;
+    } catch (Exception $e) {
+        error_log("Error agregando registros: " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Obtiene todos los registros del Excel desde BD
+ */
+function getExcelRecords($pdo) {
+    try {
+        $stmt = $pdo->query("SELECT data FROM excel_records");
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $result = [];
+        foreach ($records as $record) {
+            $result[] = json_decode($record['data'], true);
+        }
+        return $result;
+    } catch (Exception $e) {
+        error_log("Error obteniendo registros: " . $e->getMessage());
+        return [];
+    }
 }

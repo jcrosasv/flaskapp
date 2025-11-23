@@ -100,6 +100,14 @@ function initializeDatabase() {
                     total_records INTEGER NOT NULL
                 )
             ");
+            
+            // Crear tabla para almacenar registros del Excel
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS excel_records (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    data JSON NOT NULL
+                )
+            ");
         } else {
             $pdo->exec("
                 CREATE TABLE IF NOT EXISTS upload_logs (
@@ -108,6 +116,14 @@ function initializeDatabase() {
                     username VARCHAR(80) NOT NULL,
                     upload_date DATETIME DEFAULT CURRENT_TIMESTAMP,
                     total_records INT NOT NULL
+                )
+            ");
+            
+            // Crear tabla para almacenar registros del Excel
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS excel_records (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    data JSON NOT NULL
                 )
             ");
         }

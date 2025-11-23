@@ -81,8 +81,32 @@ class UploadLog(db.Model):
             'total_records': self.total_records
         }
 
-# Variable global para almacenar datos del Excel
-current_data = []
+# Modelo para almacenar registros del Excel
+class ExcelRecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    data = db.Column(db.JSON, nullable=False)  # Almacenar como JSON
+    
+    @classmethod
+    def clear_all(cls):
+        """Borrar todos los registros"""
+        db.session.query(cls).delete()
+        db.session.commit()
+    
+    @classmethod
+    def add_records(cls, records_list):
+        """Agregar nuevos registros"""
+        for record_data in records_list:
+            record = cls(data=record_data)
+            db.session.add(record)
+        db.session.commit()
+    
+    @classmethod
+    def get_all(cls):
+        """Obtener todos los registros"""
+        records = db.session.query(cls).all()
+        return [r.data for r in records]
+
+# Variable global para almacenar encabezados del Excel (se reinicia con cada subida)
 current_columns = []
 
 def get_current_user():
@@ -96,8 +120,8 @@ def get_current_user():
         return None
 
 def load_excel_data(filepath):
-    """Carga los datos del archivo Excel a memoria con validación de duplicados"""
-    global current_data, current_columns
+    """Carga los datos del archivo Excel a BD con validación de duplicados"""
+    global current_columns
     try:
         current_columns, excel_data = read_excel_file(filepath)
         
@@ -143,7 +167,15 @@ def load_excel_data(filepath):
         else:
             filtered_data = excel_data
         
-        current_data = filtered_data
+        # Limpiar registros anteriores y guardar los nuevos en BD
+        try:
+            ExcelRecord.clear_all()
+            # Convertir cada fila a lista (JSON compatible)
+            records_to_save = [list(row) if not isinstance(row, list) else row for row in filtered_data]
+            ExcelRecord.add_records(records_to_save)
+        except Exception as db_error:
+            print(f"Error guardando en BD: {db_error}")
+            return False
         
         # Guardar información de duplicados si los hay
         if duplicates_found:
@@ -151,13 +183,14 @@ def load_excel_data(filepath):
             for dup in duplicates_found[:5]:  # Mostrar primeros 5
                 print(f"   - Fila {dup['row']}: Cédula {dup['cedula']}, Comparendo {dup['comparendo']}")
         
-        return bool(current_columns and current_data)
+        return bool(current_columns and filtered_data)
     except Exception as e:
         print(f"Error loading Excel: {e}")
         return False
 
 def search_data(search_text):
     """Busca en los datos del Excel por cualquier campo"""
+    current_data = ExcelRecord.get_all()
     if not current_data:
         return []
     
@@ -385,6 +418,9 @@ def api_search():
     if per_page < 1 or per_page > 100:
         per_page = 20
     
+    # Obtener datos de BD
+    current_data = ExcelRecord.get_all()
+    
     # Verificar si hay datos cargados
     if not current_data or not current_columns:
         print(f"WARNING: Search attempted but no data loaded. current_data: {len(current_data) if current_data else 0} records", flush=True)
@@ -399,7 +435,7 @@ def api_search():
         }), 200
     
     try:
-        results = search_data(search_text)
+        results = search_in_excel_data(current_data, current_columns, search_text)
         formatted_results = format_search_results(current_columns, results)
         
         # formatted_results[0] es el header row, el resto son datos
@@ -444,6 +480,9 @@ def api_first_data():
     """API endpoint para obtener los primeros 50 datos"""
     if 'user_id' not in session:
         return jsonify({'success': False, 'message': 'No autorizado'}), 401
+    
+    # Obtener datos de BD
+    current_data = ExcelRecord.get_all()
     
     if not current_data or not current_columns:
         # Retornar datos vacíos en vez de error 400
@@ -507,10 +546,6 @@ def api_upload():
         return jsonify({'success': False, 'message': 'Solo se aceptan archivos Excel'}), 400
     
     try:
-        # Limpiar datos anteriores
-        current_data = []
-        current_columns = []
-        
         # Guardar archivo
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(filepath)
@@ -520,10 +555,10 @@ def api_upload():
             os.remove(filepath)
             return jsonify({'success': False, 'message': 'El archivo no es un Excel válido'}), 400
         
-        # Cargar datos a memoria
+        # Cargar datos a BD (esto automáticamente borra los anteriores)
         if load_excel_data(filepath):
-            # Informar cuántos registros se cargaron
-            records_count = len(current_data)
+            # Obtener cantidad de registros guardados
+            records_count = len(ExcelRecord.get_all())
             
             # Guardar en log de subidas
             try:

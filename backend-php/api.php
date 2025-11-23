@@ -13,8 +13,7 @@ initializeDatabase();
 // Obtener conexión a BD
 $pdo = getPDO();
 
-// Variables globales para almacenar datos del Excel (en producción usar Redis o caché)
-$currentData = [];
+// Variables globales para almacenar encabezados del Excel (se reinicia con cada subida)
 $currentColumns = [];
 
 // Rutas
@@ -129,7 +128,7 @@ function handleSearch() {
         jsonResponse(false, 'No autorizado', null, 401);
     }
     
-    global $currentData, $currentColumns;
+    global $pdo, $currentColumns;
     
     $searchText = getQuery('searchText', '');
     $page = (int)(getQuery('page', 1));
@@ -141,6 +140,9 @@ function handleSearch() {
     
     if ($page < 1) $page = 1;
     if ($perPage < 1 || $perPage > 100) $perPage = 20;
+    
+    // Obtener datos de BD
+    $currentData = getExcelRecords($pdo);
     
     // Verificar si hay datos cargados
     if (empty($currentData) || empty($currentColumns)) {
@@ -192,7 +194,10 @@ function handleFirstData() {
         jsonResponse(false, 'No autorizado', null, 401);
     }
     
-    global $currentData, $currentColumns;
+    global $pdo, $currentColumns;
+    
+    // Obtener datos de BD
+    $currentData = getExcelRecords($pdo);
     
     if (empty($currentData) || empty($currentColumns)) {
         jsonResponse(true, 'Sin datos', [
@@ -220,7 +225,7 @@ function handleFirstData() {
  * Maneja carga de archivos
  */
 function handleUpload($pdo) {
-    global $currentData, $currentColumns;
+    global $currentColumns;
     
     if (!Session::isLoggedIn()) {
         jsonResponse(false, 'No autorizado', null, 401);
@@ -254,10 +259,6 @@ function handleUpload($pdo) {
     }
     
     try {
-        // Limpiar datos anteriores
-        $currentData = [];
-        $currentColumns = [];
-        
         // Guardar archivo
         $filename = basename($file['name']);
         $filepath = UPLOAD_FOLDER . '/' . $filename;
@@ -320,10 +321,14 @@ function handleUpload($pdo) {
             $rowNum++;
         }
         
-        $currentData = $filteredData;
+        // Limpiar registros anteriores y guardar los nuevos en BD
+        clearExcelRecords($pdo);
+        addExcelRecords($pdo, $filteredData);
+        
+        // Actualizar columnas
         $currentColumns = $columns;
         
-        $recordsCount = count($currentData);
+        $recordsCount = count($filteredData);
         
         // Guardar en log
         try {
