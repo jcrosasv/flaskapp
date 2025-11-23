@@ -1,0 +1,11 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Redirigir todas las solicitudes de API a api.php
+    RewriteRule ^api/v1/(.*)$ api.php [QSA,L]
+    
+    # Redirigir solicitudes sin extensión
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php?path=$1 [QSA,L]
+</IfModule>

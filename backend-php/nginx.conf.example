@@ -1,0 +1,44 @@
+server {
+    listen 80;
+    server_name localhost;
+
+    root /path/to/backend-php;
+    index index.php;
+
+    # Logging
+    access_log /var/log/nginx/php_app_access.log;
+    error_log /var/log/nginx/php_app_error.log;
+
+    # Increase upload size limit
+    client_max_body_size 50M;
+
+    # Rewrite rules
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ ^/api/v1/ {
+        try_files $uri /api.php?$query_string;
+    }
+
+    # PHP FastCGI
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.0-fpm.sock;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    # Deny access to sensitive files
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    location ~ ~$ {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+}
