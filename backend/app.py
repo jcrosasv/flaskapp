@@ -39,6 +39,12 @@ def add_cors_headers(response):
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'
     
+    # Desabilitar cache para APIs JSON
+    if response.content_type and 'application/json' in response.content_type:
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, public, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    
     return response
 
 # Crear carpeta de uploads si no existe

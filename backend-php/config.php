@@ -155,6 +155,11 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 header('Content-Type: application/json');
 
+// Desabilitar cache para APIs
+header('Cache-Control: no-cache, no-store, must-revalidate, public, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 // Manejo de preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
